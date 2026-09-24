@@ -58,18 +58,20 @@ img{display:block;max-width:100%}
 .bar{position:sticky;top:0;z-index:30;background:var(--card);border-bottom:1px solid var(--rule);
   box-shadow:var(--shadow)}
 .bar .wrap{display:flex;align-items:center;gap:.9rem;padding-top:.7rem;padding-bottom:.7rem}
-.chips{display:flex;gap:.5rem;overflow-x:auto;scrollbar-width:none;flex:1 1 auto;
-  -webkit-mask-image:linear-gradient(to left,#000 88%,transparent 100%);
-  mask-image:linear-gradient(to left,#000 88%,transparent 100%)}
-.chips::-webkit-scrollbar{display:none}
-.chips button{flex:0 0 auto;font:inherit;font-size:.875rem;font-weight:600;cursor:pointer;
-  display:inline-flex;align-items:center;gap:.4rem;background:transparent;color:var(--muted);
-  border:1px solid var(--rule);padding:.35rem .85rem;border-radius:.6rem;white-space:nowrap}
-.chips button[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:#fff}
-.chips button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
-.search{flex:0 0 auto;width:6.5rem;transition:width .2s}
-.search:focus-within{width:min(15rem,60vw)}
-@media(min-width:48rem){.search{width:min(15rem,30vw)}}
+.cats{padding:1.4rem 1.1rem .5rem}
+.cats-grid{display:grid;gap:.9rem .35rem;grid-template-columns:repeat(auto-fit,minmax(4.1rem,1fr))}
+@media(min-width:48rem){.cats-grid{grid-template-columns:repeat(13,1fr);gap:1rem .5rem}}
+.cat-btn{background:none;border:0;padding:0;font:inherit;cursor:pointer;color:var(--muted);
+  display:flex;flex-direction:column;align-items:center;gap:.45rem;min-width:0}
+.cat-btn .disc{width:3.1rem;height:3.1rem;border-radius:50%;display:grid;place-items:center;
+  background:var(--card);border:1px solid var(--rule);color:var(--text)}
+.cat-btn .disc .ic{width:1.6rem;height:1.6rem;stroke-width:1.7}
+.cat-btn .lbl{font-size:.7rem;line-height:1.25;text-align:center;max-width:100%;
+  overflow-wrap:anywhere;hyphens:auto}
+.cat-btn[aria-pressed="true"] .disc{background:var(--green);border-color:var(--green);color:#fff}
+.cat-btn[aria-pressed="true"] .lbl{color:var(--green);font-weight:700}
+.cat-btn:focus-visible .disc{outline:2px solid var(--green);outline-offset:3px}
+.search{flex:1 1 auto}
 .search input{width:100%;font:inherit;font-size:.875rem;padding:.45rem .8rem;
   border:1px solid var(--rule);border-radius:.6rem;background:var(--page);color:var(--text)}
 .search input:focus{outline:2px solid var(--green);outline-offset:1px;border-color:transparent}
@@ -130,6 +132,7 @@ footer a:hover{color:var(--green)}
 <body>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="ic-all" viewBox="0 0 24 24"><rect x="3.8" y="3.8" width="7.2" height="7.2" rx="2.2"/><rect x="13" y="3.8" width="7.2" height="7.2" rx="2.2"/><rect x="3.8" y="13" width="7.2" height="7.2" rx="2.2"/><rect x="13" y="13" width="7.2" height="7.2" rx="2.2"/></symbol>
 <symbol id="ic-ice" viewBox="0 0 24 24"><path d="M7.3 9.6a4.7 4.7 0 0 1 9.4 0"/><path d="M6.4 9.6h11.2"/><path d="M8.2 9.6 12 20.8l3.8-11.2"/></symbol>
 <symbol id="ic-redbull" viewBox="0 0 24 24"><rect x="7.5" y="3" width="9" height="18" rx="2.5"/><path d="M12.9 7.4 10.4 12h3.2l-2.5 4.6"/></symbol>
 <symbol id="ic-salad" viewBox="0 0 24 24"><path d="M3.5 12h17c0 4.7-3.8 8.5-8.5 8.5S3.5 16.7 3.5 12z"/><circle cx="9" cy="8.8" r="1.6"/><circle cx="13.2" cy="7.6" r="1.9"/><circle cx="16.6" cy="9.6" r="1.4"/></symbol>
@@ -158,9 +161,12 @@ footer a:hover{color:var(--green)}
   </div>
 </header>
 
+<section class="wrap cats">
+  <div class="cats-grid" id="chips" role="group" aria-label="الأقسام"></div>
+</section>
+
 <div class="bar">
   <div class="wrap">
-    <div class="chips" id="chips" role="group" aria-label="الأقسام"></div>
     <div class="search"><input type="search" id="q" placeholder="ابحث" aria-label="بحث"></div>
   </div>
 </div>
@@ -245,9 +251,11 @@ function chrome(){
   $("#up").setAttribute("aria-label",t.up);
   $("#lb-close").setAttribute("aria-label",t.close);
   qEl.placeholder=t.search; qEl.setAttribute("aria-label",t.search);
-  chipsEl.innerHTML=
-    '<button type="button" data-cat="all" aria-pressed="'+(cat==="all")+'">'+t.all+'</button>'+
-    MENU.map(c=>'<button type="button" data-cat="'+c.id+'" aria-pressed="'+(cat===c.id)+'"><svg class="ic" aria-hidden="true"><use href="#ic-'+c.icon+'"/></svg>'+esc(c[lang])+'</button>').join("");
+  const disc=(k,label,on)=>'<button class="cat-btn" type="button" data-cat="'+k+'" aria-pressed="'+on+'">'+
+    '<span class="disc"><svg class="ic" aria-hidden="true"><use href="#ic-'+(k==="all"?"all":k)+'"/></svg></span>'+
+    '<span class="lbl">'+label+'</span></button>';
+  chipsEl.innerHTML = disc("all",t.all,cat==="all")+
+    MENU.map(c=>disc(c.id,esc(c[lang]),cat===c.id)).join("");
   $("#f-cats").innerHTML=MENU.map(c=>'<li><a href="#g-'+c.id+'" data-jump="'+c.id+'">'+esc(c[lang])+'</a></li>').join("");
 }
 
