@@ -34,9 +34,15 @@ body{margin:0;background:var(--page);color:var(--text);
 img{display:block;max-width:100%}
 .wrap{max-width:74rem;margin:0 auto;padding:0 1.1rem}
 
-.hero{background:
+.hero{position:relative;overflow:hidden;background:
     radial-gradient(130% 85% at 50% 0%, #143A28 0%, transparent 62%), var(--dark);
   color:#fff;padding:.5rem 0 2.25rem}
+.hero-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  opacity:0;transition:opacity .9s ease}
+.hero-vid.on{opacity:1}
+.hero-veil{position:absolute;inset:0;background:
+  linear-gradient(180deg,rgba(5,11,8,.8) 0%,rgba(5,11,8,.64) 45%,rgba(5,11,8,.93) 100%)}
+.hero>.wrap{position:relative;z-index:1}
 @media(min-width:48rem){.hero{padding:1rem 0 3.25rem}}
 .nav{display:flex;align-items:center;justify-content:flex-end;gap:1rem;padding:.6rem 1.1rem}
 .switch{display:flex;gap:.2rem;background:rgba(255,255,255,.1);border-radius:999px;padding:.2rem}
@@ -148,6 +154,8 @@ footer a:hover{color:var(--green)}
 </defs></svg>
 
 <header class="hero">
+  <video class="hero-vid" data-src="hero.mp4" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"></video>
+  <div class="hero-veil" aria-hidden="true"></div>
   <div class="wrap nav">
     <div class="switch" role="group" aria-label="Language">
       <button type="button" data-lang="ar" aria-pressed="true">عربي</button>
@@ -340,6 +348,22 @@ try{
 }catch(e){}
 
 chrome(); render();
+
+// Hero video: skipped entirely on reduced-motion or data-saver; paused when off screen.
+(function(){
+  const v=document.querySelector(".hero-vid"); if(!v) return;
+  const slow = (navigator.connection||{}).saveData === true;
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(slow||still){ v.remove(); return; }
+  v.addEventListener("loadeddata",()=>v.classList.add("on"),{once:true});
+  v.addEventListener("error",()=>v.remove(),{once:true});
+  v.src=v.dataset.src;
+  const go=()=>v.play().catch(()=>{});
+  v.addEventListener("canplay",go,{once:true}); go();
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(es=>es.forEach(e=>{ e.isIntersecting?go():v.pause(); })).observe(v);
+  }
+})();
 </script>
 </body>
 </html>
