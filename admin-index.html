@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>لوحة التحكم — لاروشيه كافيه</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap">
+<style>
+:root{
+  --green:#1C6A47; --green-soft:#EAF2ED;
+  --dark:#0C0F0D; --page:#F6F8F7; --card:#FFFFFF;
+  --text:#141816; --muted:#6B7370; --rule:#E2E7E4;
+  --danger:#B3261E; --warn:#8A5A00;
+  --shadow:0 2px 10px rgba(12,15,13,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --green:#52C08C; --green-soft:#16211B; --dark:#070908; --page:#0B0D0C; --card:#141816;
+    --text:#ECF1EE; --muted:#98A19D; --rule:#252A27;
+    --danger:#F2B8B5; --warn:#E8C37A; --shadow:0 2px 10px rgba(0,0,0,.4);
+  }
+}
+*{box-sizing:border-box}
+/* .screen and friends set display, which beats the UA rule for [hidden] */
+[hidden]{display:none !important}
+html,body{margin:0}
+body{background:var(--page);color:var(--text);
+  font-family:Cairo,"Segoe UI",system-ui,-apple-system,sans-serif;line-height:1.55;
+  -webkit-text-size-adjust:100%}
+.wrap{max-width:60rem;margin:0 auto;padding:0 1rem}
+button{font:inherit;cursor:pointer}
+input,select{font:inherit;color:inherit}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ---------- shared controls ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
+  background:var(--green);color:#fff;border:0;border-radius:.6rem;
+  padding:.6rem 1.1rem;font-weight:700;white-space:nowrap}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--rule)}
+.btn.sm{padding:.4rem .7rem;font-size:.8125rem;border-radius:.5rem}
+.btn.dim{background:var(--green-soft);color:var(--green)}
+.btn:focus-visible,.fld:focus-visible,input:focus-visible,select:focus-visible,
+.icobtn:focus-visible,.cat-head:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.fld{width:100%;background:var(--card);border:1px solid var(--rule);border-radius:.5rem;
+  padding:.5rem .65rem;min-width:0}
+.icobtn{width:2rem;height:2rem;display:grid;place-items:center;border-radius:.5rem;
+  background:transparent;border:1px solid var(--rule);color:var(--muted);padding:0;line-height:1}
+.icobtn:hover{color:var(--text);border-color:var(--muted)}
+.icobtn.del:hover{color:var(--danger);border-color:var(--danger)}
+.icobtn svg{width:1.05rem;height:1.05rem;fill:none;stroke:currentColor;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+.note{color:var(--muted);font-size:.8125rem}
+.pill{display:inline-flex;align-items:center;gap:.35rem;font-size:.75rem;font-weight:600;
+  border-radius:999px;padding:.2rem .6rem;background:var(--green-soft);color:var(--green)}
+.pill.off{background:rgba(138,90,0,.12);color:var(--warn)}
+.dot{width:.45rem;height:.45rem;border-radius:50%;background:currentColor}
+
+/* ---------- gate / setup ---------- */
+.screen{min-height:100svh;display:grid;place-items:center;padding:1.5rem 1rem}
+.panel{width:100%;max-width:26rem;background:var(--card);border:1px solid var(--rule);
+  border-radius:1rem;box-shadow:var(--shadow);padding:1.6rem 1.4rem}
+.panel.wide{max-width:34rem}
+.mark{display:block;width:4.6rem;margin:0 auto .9rem;color:var(--green)}
+.mark svg{width:100%;height:auto;display:block}
+.panel h1{font-size:1.15rem;margin:0 0 .25rem;text-align:center}
+.panel .sub{margin:0 0 1.3rem;text-align:center;color:var(--muted);font-size:.875rem}
+.row{display:flex;gap:.5rem}
+.err{margin:.8rem 0 0;color:var(--danger);font-size:.8125rem;min-height:1.2rem}
+ol.steps{margin:0 0 1rem;padding-inline-start:1.2rem;font-size:.875rem}
+ol.steps li{margin-bottom:.55rem}
+code.k{background:var(--green-soft);color:var(--green);border-radius:.3rem;
+  padding:.05rem .3rem;font-size:.85em;font-family:ui-monospace,monospace}
+
+/* ---------- top bar ---------- */
+.top{position:sticky;top:0;z-index:30;background:var(--card);border-bottom:1px solid var(--rule)}
+.top .wrap{display:flex;align-items:center;gap:.6rem;min-height:3.5rem;flex-wrap:wrap;
+  padding-top:.5rem;padding-bottom:.5rem}
+.top .brand{display:flex;align-items:center;gap:.5rem;font-weight:700;margin-inline-end:auto}
+.tools{display:flex;align-items:center;gap:.4rem}
+.search-wrap{flex:1 1 12rem;order:9;min-width:0}
+@media(min-width:40rem){.search-wrap{order:0;flex:0 1 16rem}}
+
+/* ---------- categories ---------- */
+/* .wrap sets the horizontal padding; repeat it here or the shorthand wins and
+   the content hits the screen edge / disappears behind the save bar. */
+main.wrap{padding:1rem 1rem 7.5rem}
+.cat{background:var(--card);border:1px solid var(--rule);border-radius:.85rem;
+  margin-bottom:.7rem;overflow:hidden}
+.cat-head{display:flex;align-items:center;gap:.6rem;width:100%;background:transparent;
+  border:0;padding:.8rem .9rem;text-align:start;color:inherit}
+.cat-head .disc{width:2.3rem;height:2.3rem;border-radius:50%;flex:0 0 auto;display:grid;
+  place-items:center;background:var(--green-soft);color:var(--green)}
+.cat-head .disc svg{width:1.25rem;height:1.25rem;fill:none;stroke:currentColor;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round}
+.cat-head .nm{font-weight:700;flex:1 1 auto;min-width:0}
+.cat-head .nm small{display:block;font-weight:400;color:var(--muted);font-size:.75rem}
+.cat-head .chev{color:var(--muted);transition:transform .18s}
+.cat[data-open="1"] .chev{transform:rotate(180deg)}
+.cat-body{display:none;border-top:1px solid var(--rule);padding:.3rem .55rem .7rem}
+.cat[data-open="1"] .cat-body{display:block}
+.cat-tools{display:flex;gap:.4rem;padding:.55rem .35rem .2rem;flex-wrap:wrap;align-items:center}
+
+/* ---------- item rows ---------- */
+.it{display:grid;gap:.5rem .6rem;padding:.65rem .35rem;border-bottom:1px solid var(--rule);
+  grid-template-columns:4.2rem 1fr;grid-template-areas:"shot names" "shot meta"}
+.it:last-child{border-bottom:0}
+.it .shot{grid-area:shot;position:relative;aspect-ratio:4/3;border-radius:.5rem;overflow:hidden;
+  background:var(--green-soft);border:1px solid var(--rule);padding:0;display:block;width:100%}
+.it .shot img{width:100%;height:100%;object-fit:cover;display:block}
+.it .shot .cam{position:absolute;inset-block-end:0;inset-inline:0;background:rgba(0,0,0,.55);
+  color:#fff;font-size:.6rem;text-align:center;padding:.1rem 0;font-weight:600}
+.it .names{grid-area:names;display:grid;gap:.4rem}
+.it .meta{grid-area:meta;display:flex;gap:.5rem;align-items:center}
+.it .price{grid-area:price;display:flex;align-items:center;gap:.3rem}
+.it .price .fld{text-align:center}
+.it .unit{color:var(--muted);font-size:.8125rem}
+.it .acts{grid-area:acts;display:flex;gap:.3rem;margin-inline-start:auto}
+.it.gone{display:none}
+.lbl{font-size:.7rem;color:var(--muted);display:block;margin-bottom:.1rem}
+@media(min-width:46rem){
+  .it{grid-template-columns:4.2rem 1fr 1fr 6.5rem auto;align-items:center;
+    grid-template-areas:"shot n1 n2 price acts"}
+  /* on wide screens the two name fields leave .names and sit side by side */
+  .it .names{display:contents}
+  .it .n1{grid-area:n1}
+  .it .n2{grid-area:n2}
+  .it .meta{display:contents}
+}
+
+/* ---------- save bar ---------- */
+.bar{position:fixed;inset-inline:0;bottom:0;z-index:40;background:var(--card);
+  border-top:1px solid var(--rule);padding:.65rem 0;box-shadow:0 -2px 14px rgba(0,0,0,.07)}
+.bar .wrap{display:flex;align-items:center;gap:.7rem}
+.bar .msg{flex:1 1 auto;font-size:.8125rem;color:var(--muted);min-width:0}
+.bar .msg.ok{color:var(--green);font-weight:600}
+.bar .msg.bad{color:var(--danger);font-weight:600}
+
+/* ---------- sheet ---------- */
+dialog{border:0;padding:0;background:transparent;max-width:min(30rem,94vw);width:100%}
+dialog::backdrop{background:rgba(8,12,10,.6)}
+.sheet{background:var(--card);border-radius:1rem;padding:1.3rem 1.2rem;color:var(--text)}
+.sheet h2{margin:0 0 1rem;font-size:1.05rem}
+.sheet .grid{display:grid;gap:.75rem}
+.sheet .foot{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1.2rem}
+.icons{display:grid;grid-template-columns:repeat(auto-fit,minmax(3rem,1fr));gap:.4rem}
+.icons label{display:grid;place-items:center;gap:.2rem;padding:.4rem .2rem;border-radius:.6rem;
+  border:1px solid var(--rule);cursor:pointer}
+.icons input{position:absolute;opacity:0;pointer-events:none}
+.icons label svg{width:1.3rem;height:1.3rem;fill:none;stroke:currentColor;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round}
+.icons label:has(input:checked){border-color:var(--green);background:var(--green-soft);color:var(--green)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="ic-logo" viewBox="250.15 129.17 505.85 752.83"><path fill-rule="nonzero" fill="currentColor" d="M 308.699219 135.699219 C 308.300781 136 308 197.101562 308 271.398438 C 308.101562 381.699219 308.300781 408.300781 309.5 416.5 C 313.398438 444.199219 319.601562 461.601562 335.5 488.5 C 343.5 502.101562 366.199219 527.199219 379 536.601562 C 392.800781 546.800781 402.601562 552.898438 415 559.101562 C 425.5 564.300781 449.101562 572.101562 460.898438 574.101562 C 511.5 583 552.800781 576 597.5 551 C 611.101562 543.398438 622.398438 534.699219 635.5 521.601562 C 660 497 672.898438 475 685 436.5 C 685.5 434.800781 686.800781 427.898438 688 421 C 690 408.800781 690 405.699219 689.800781 272 L 689.5 135.5 L 499.398438 135.199219 C 394.898438 135.101562 309 135.300781 308.699219 135.699219 Z M 675.699219 279.699219 C 675.398438 372.101562 675 413.101562 674.199219 417 C 669.800781 438.601562 666.199219 449.898438 658.800781 464.898438 C 647.398438 488.199219 629.898438 509.898438 611 524.199219 C 598.5 533.699219 595.300781 536 594.601562 536 C 594.101562 536 592.601562 536.800781 591.199219 537.898438 C 579.101562 546.398438 546.398438 558.398438 526 561.601562 C 505 565 479.199219 564 458 558.800781 C 437.398438 553.898438 411.898438 542.5 397.300781 531.800781 C 383.800781 522 380.101562 518.898438 371.800781 510.601562 C 351.300781 490.199219 336.300781 465 328.800781 438.5 C 321.699219 413.300781 322 419.300781 322 276.5 C 322 206.601562 322.300781 149 322.699219 148.699219 C 323 148.300781 402.699219 148 499.699219 148 L 676 148 Z M 675.699219 279.699219 "/><path fill-rule="nonzero" fill="currentColor" d="M 642.199219 532.398438 C 634.398438 540.101562 628 547 628 547.601562 C 628 549 655 576 656.398438 576 C 657 576 664.199219 569.199219 672.5 561 L 687.5 546 L 673.5 532 C 665.800781 524.300781 658.800781 518.101562 658 518.101562 C 657.199219 518.199219 650.101562 524.601562 642.199219 532.398438 Z M 642.199219 532.398438 "/><path fill-rule="nonzero" fill="currentColor" d="M 620.5 599.699219 C 617.199219 600.398438 612.5 601.398438 610 601.800781 C 606.898438 602.300781 605.398438 603.101562 605.199219 604.300781 C 604.898438 605.601562 605.5 606 607.699219 606 C 611.398438 606.101562 613.398438 607.699219 614.800781 611.898438 C 616.101562 615.699219 616.398438 650.199219 615.300781 675.398438 C 614.601562 691.300781 614.199219 692.699219 608.699219 694 C 607.5 694.300781 606.5 695.199219 606.5 696 C 606.5 697.300781 609.398438 697.5 623.5 697.800781 C 632.800781 697.898438 641.101562 697.800781 641.800781 697.5 C 643.699219 696.800781 641.5 694 639 694 C 638.101562 694 636.5 693.101562 635.398438 691.898438 C 633.699219 690 633.5 688.101562 633.5 670.5 C 633.5 652.5 633.601562 651 635.601562 648.398438 C 638.601562 644.300781 642.898438 642.199219 648.101562 642.101562 C 651.800781 642 653.101562 642.5 655.300781 644.800781 C 659.199219 648.800781 660.199219 655.601562 659.800781 674.101562 L 659.5 690.199219 L 656.300781 692.898438 C 650.5 697.699219 651.398438 698.101562 669.800781 697.800781 C 683.5 697.5 686.5 697.199219 686.5 696.101562 C 686.5 695.300781 685.199219 694.300781 683.699219 693.898438 C 678.398438 692.5 678.101562 691.199219 678 670 C 677.800781 645.5 676.898438 642.199219 668 636 C 664.898438 633.800781 663.5 633.5 656.5 633.601562 C 649.699219 633.699219 647.800781 634.101562 643.898438 636.300781 C 641.398438 637.800781 638.5 639.898438 637.5 641 C 633.300781 645.699219 633 644.300781 633 620.5 L 633 598 L 629.800781 598.101562 C 628 598.199219 623.800781 598.898438 620.5 599.699219 Z M 620.5 599.699219 "/><path fill-rule="nonzero" fill="currentColor" d="M 256.5 603 C 255.398438 604.699219 257 606 260.101562 606 C 262.101562 606 264.101562 607 266 608.800781 C 269.800781 612.601562 270 615.601562 269.699219 654.699219 C 269.5 685.601562 269.398438 687 267.398438 689.699219 C 266 691.5 263.800781 692.898438 260.898438 693.601562 C 258.300781 694.199219 256.5 695.199219 256.5 696.101562 C 256.5 697.300781 262.898438 697.5 297.398438 697.800781 C 320 697.898438 338.699219 697.699219 339.199219 697.199219 C 340.398438 696 344 678.199219 344 673.199219 C 344 667.699219 342.601562 668 338.300781 674.5 C 333 682.5 328.300781 687 322.398438 689.601562 C 317.699219 691.699219 315.398438 692 305.699219 692 C 297.101562 692 293.898438 691.601562 292.199219 690.398438 L 290 688.898438 L 290 651 C 290 625 290.398438 612.300781 291.101562 610.601562 C 292.300781 608.101562 295.5 606.300781 300 605.800781 C 301.398438 605.601562 302.5 604.898438 302.5 604 C 302.5 602.699219 299.199219 602.5 279.800781 602.199219 C 265.199219 602.101562 256.898438 602.300781 256.5 603 Z M 256.5 603 "/><path fill-rule="nonzero" fill="currentColor" d="M 371 633.898438 C 366.5 634.898438 359.101562 638.300781 356.398438 640.699219 C 353.5 643.300781 352 646.300781 352 649.800781 C 352 653.800781 354.800781 656 359.800781 656 C 365.101562 656 368 652.601562 368 646.5 C 368 641.101562 371 638 376.398438 638 C 381.800781 638 386.601562 642.898438 387.5 649.5 C 388.898438 658.699219 388.699219 658.898438 370.101562 664.5 C 360.398438 667.398438 355.898438 669.898438 352.398438 674.601562 C 347.199219 681.398438 348.601562 690.300781 355.800781 695.800781 C 358.898438 698.199219 360.199219 698.5 366.898438 698.5 C 374.601562 698.5 375.898438 698 385.199219 692.199219 C 387.898438 690.601562 387.898438 690.601562 391.300781 694.5 C 394.601562 698.300781 395 698.5 400.699219 698.5 C 406.398438 698.398438 411.800781 696.101562 414.199219 692.5 C 415.898438 690.199219 415 689 412 689.601562 C 406.300781 690.800781 406 689.699219 406 669.5 C 406 658.601562 405.5 649.898438 404.898438 647.898438 C 401.800781 638.699219 394.601562 634.199219 382.199219 633.5 C 378 633.300781 372.898438 633.398438 371 633.898438 Z M 387 666.5 C 387.898438 667.601562 388.101562 670.601562 387.800781 676.699219 C 387.398438 684.800781 387.199219 685.5 384.398438 687.699219 C 381.199219 690.199219 374.601562 690.800781 371.898438 688.699219 C 367.898438 685.699219 366.800781 679.101562 369.5 674 C 371.601562 670 378.101562 666.300781 385.101562 665.101562 C 385.5 665 386.300781 665.699219 387 666.5 Z M 387 666.5 "/><path fill-rule="nonzero" fill="currentColor" d="M 455 635.898438 C 452.5 637.601562 449.398438 640.5 448.101562 642.5 C 446.800781 644.398438 445.398438 646 444.898438 646 C 444.5 646 444 643.398438 443.800781 640.199219 L 443.5 634.5 L 439 634.601562 C 436.5 634.601562 432.300781 635.199219 429.5 635.898438 C 426.800781 636.5 422.800781 637.300781 420.699219 637.699219 C 415.898438 638.398438 415.898438 641.300781 420.699219 641.800781 C 422.398438 642 424.300781 642.699219 424.898438 643.398438 C 425.699219 644.300781 426 652.300781 425.800781 668.101562 L 425.5 691.5 L 421.601562 693.5 C 419.5 694.601562 417.800781 695.898438 417.898438 696.5 C 418 697.101562 425.300781 697.601562 437.101562 697.800781 C 454.699219 698 456.101562 697.898438 455.800781 696.300781 C 455.601562 695.300781 454.101562 694.300781 452 693.898438 C 445.601562 692.601562 445 690.800781 445 673.101562 C 445 656.300781 445.898438 651.101562 449.199219 648 C 452 645.398438 455 645.5 460.101562 648.101562 C 463.601562 649.898438 464.601562 650 467.101562 648.898438 C 470.601562 647.5 472 645.300781 472 641.199219 C 472 636.699219 469.199219 633.898438 464 633.300781 C 460.199219 632.898438 458.800781 633.300781 455 635.898438 Z M 455 635.898438 "/><path fill-rule="nonzero" fill="currentColor" d="M 499 633.898438 C 488.101562 636.300781 477.601562 644.898438 474.101562 654.300781 C 469.898438 665.699219 472.101562 679.101562 479.601562 687.800781 C 481.699219 690.300781 485.699219 693.199219 489.800781 695.199219 C 495.898438 698.199219 497.300781 698.5 506 698.5 C 516.800781 698.5 521.398438 697.101562 529.199219 691.300781 C 536.601562 685.898438 542 675 542 665.5 C 542 661.101562 540 653.898438 537.601562 649.199219 C 535.601562 645.398438 527.800781 639 521.699219 636.199219 C 516.5 633.800781 504.800781 632.601562 499 633.898438 Z M 512.800781 640 C 517.199219 642.699219 519.699219 647.101562 521.101562 655.101562 C 522.601562 663.5 521.800781 678.199219 519.601562 683.5 C 518.699219 685.699219 516.5 689 514.800781 690.699219 C 512.101562 693.5 510.898438 694 506.898438 694 C 503.699219 694 501.398438 693.398438 499.601562 691.898438 C 488.800781 683.398438 488.800781 648.601562 499.601562 640.101562 C 503 637.398438 508.5 637.398438 512.800781 640 Z M 512.800781 640 "/><path fill-rule="nonzero" fill="currentColor" d="M 571.5 633.898438 C 561 636.601562 553.101562 642.898438 548.800781 651.800781 C 545.898438 657.800781 545.601562 659.398438 545.699219 667 C 545.800781 680.699219 551.199219 689.898438 562.5 695.800781 C 566.898438 698.101562 568.699219 698.398438 577.5 698.5 C 586.5 698.5 588 698.199219 592.5 695.800781 C 598.398438 692.5 600.800781 690.601562 603.800781 686.300781 C 608.199219 680.101562 605.601562 677.601562 600.398438 683.101562 C 592.5 691.5 579.300781 692.101562 571.5 684.300781 C 566 678.800781 564.601562 674.699219 564.199219 663.5 C 563.898438 654.5 564.101562 652.800781 566.199219 648.199219 C 569 642.101562 574 638 578.601562 638 C 583.199219 638 587.699219 642 588.5 647 C 589.699219 654.300781 596.898438 657.300781 602.5 652.800781 C 604.898438 651 605.199219 650.199219 604.699219 646.699219 C 604 641.800781 601.199219 638.800781 594.699219 636 C 589.199219 633.601562 576.800781 632.5 571.5 633.898438 Z M 571.5 633.898438 "/><path fill-rule="nonzero" fill="currentColor" d="M 712.398438 633.898438 C 707.398438 635.199219 699.101562 640.199219 695.898438 643.699219 C 694.300781 645.601562 691.898438 649.300781 690.5 652 C 687 658.898438 687 672.898438 690.398438 680.898438 C 694.699219 690.898438 703.5 697.300781 715.101562 698.898438 C 726.101562 700.398438 735.101562 697.699219 742.699219 690.699219 C 751.101562 682.898438 752 676.398438 743.601562 683.699219 C 730.398438 695.300781 712.300781 690.199219 707.5 673.601562 C 705 665.199219 705.398438 664.601562 713 663.898438 C 716.601562 663.5 726.398438 663.199219 734.800781 663.101562 L 750 663 L 750 658.101562 C 750 644.398438 738.800781 634.199219 723.101562 633.398438 C 718.898438 633.199219 714.101562 633.398438 712.398438 633.898438 Z M 726.601562 640.199219 C 730.199219 642.699219 732.398438 648.398438 731.800781 654.101562 L 731.5 657.5 L 719.5 657.5 C 705.800781 657.5 705.699219 657.398438 708 648.898438 C 710.601562 639.5 719.5 635.300781 726.601562 640.199219 Z M 726.601562 640.199219 "/><path fill-rule="nonzero" fill="currentColor" d="M 563.5 715.398438 C 555.800781 717.300781 551.398438 719.800781 547.699219 724.300781 C 543.101562 730.101562 540.5 738.101562 539.699219 749 C 539.5 752.398438 539.300781 752.5 535 753 C 531 753.398438 530.5 753.800781 530.5 756 C 530.5 758.300781 530.898438 758.5 535.300781 758.800781 L 540 759.101562 L 540 807.898438 L 537.398438 809.898438 C 535.898438 811.101562 533.898438 812 532.800781 812 C 531.699219 812 531 812.5 531.300781 813.199219 C 531.601562 814.199219 536.101562 814.5 549.5 814.5 C 562.898438 814.5 567.398438 814.199219 567.800781 813.199219 C 568 812.5 567.300781 812 566.199219 812 C 562.800781 812 559 807.5 558.898438 803.300781 C 558.398438 788.601562 558.898438 760.699219 559.601562 760 C 560.101562 759.5 563.398438 759 567 758.800781 C 573.199219 758.5 573.5 758.398438 573.5 756 C 573.5 753.601562 573.199219 753.5 566.5 753 L 559.5 752.5 L 559.5 738.398438 C 559.5 721.898438 560.300781 720 567.199219 720 C 570.898438 720 571.199219 720.300781 573.101562 724.601562 C 575.300781 729.601562 578.5 731.398438 582.800781 730.300781 C 586.199219 729.5 587.898438 727.300781 588 723.800781 C 588 720.199219 583.101562 716.601562 576.199219 715.101562 C 570 713.800781 570 713.800781 563.5 715.398438 Z M 563.5 715.398438 "/><path fill-rule="nonzero" fill="currentColor" d="M 404.5 719.5 C 396.101562 721.199219 390.398438 723.699219 383.5 728.601562 C 376.101562 733.800781 373.101562 737 369.101562 743.699219 C 357.601562 763.5 360.601562 786 376.800781 801.800781 C 394.601562 819.101562 429.101562 821.898438 446.300781 807.398438 C 453.398438 801.398438 458.699219 792.199219 456 790.5 C 455.199219 790 452.5 792.300781 448.800781 796.398438 C 439.398438 806.800781 430.199219 810.800781 417.601562 809.800781 C 403.5 808.601562 393.898438 800.398438 387 783.5 C 385.300781 779.199219 384.601562 760.601562 385.898438 753.5 C 388.199219 741.199219 395.601562 730.699219 405.199219 726.199219 C 408.800781 724.5 411.800781 724 417.601562 724 C 433.398438 724 442.101562 729.300781 449.398438 743.398438 C 454.199219 752.699219 455.5 751.699219 455.300781 739.101562 C 455.101562 724.601562 455.199219 724.800781 447.800781 722.601562 C 433.898438 718.398438 416 717.101562 404.5 719.5 Z M 404.5 719.5 "/><path fill-rule="nonzero" fill="currentColor" d="M 481.5 751.300781 C 471.199219 755.300781 465.601562 760.699219 465.601562 766.601562 C 465.601562 771 467.898438 773 472.800781 773 C 478.300781 773 479.800781 771.601562 481.199219 765 C 482.699219 757.601562 484.800781 755.5 490.601562 755.5 C 497.101562 755.5 499.699219 758.601562 500.601562 767.199219 C 501 771.699219 500.898438 774.398438 500.101562 775.300781 C 499.5 776.101562 496.199219 777.5 492.800781 778.5 C 475.5 783.398438 471.101562 785.398438 466.5 790.800781 C 462.101562 795.898438 461.699219 803.800781 465.601562 809.699219 C 469.699219 816.101562 483 818 491.800781 813.601562 C 494.5 812.199219 497.199219 810.398438 497.898438 809.601562 C 499.800781 807.300781 501.699219 807.601562 503.601562 810.601562 C 507.699219 816.800781 516.101562 817.800781 523.601562 812.699219 C 526.300781 811 528.601562 808.699219 528.800781 807.601562 C 529.101562 806 528.699219 805.898438 525.199219 806.5 C 521.898438 807 521 806.800781 520.199219 805.300781 C 519.601562 804.300781 519 794.5 518.800781 783.5 C 518.5 764.199219 518.398438 763.398438 516 759.699219 C 512 753.699219 504.5 750.5 493.5 750.300781 C 488.5 750.199219 483.199219 750.601562 481.5 751.300781 Z M 500.800781 790 C 501.300781 801.398438 500.601562 803.699219 496 806 C 490.898438 808.601562 489.398438 808.5 485.300781 805.398438 C 482.300781 803.101562 482 802.5 482 797.300781 C 482 792.101562 482.300781 791.398438 485.800781 788.101562 C 489.601562 784.5 494.800781 782.101562 498.5 782.398438 C 500.300781 782.5 500.5 783.300781 500.800781 790 Z M 500.800781 790 "/><path fill-rule="nonzero" fill="currentColor" d="M 597.5 751.398438 C 586.699219 755.601562 580.101562 762 576.300781 771.800781 C 571.601562 784 574.898438 800.199219 583.699219 807.898438 C 591.101562 814.5 596.101562 816.300781 606.5 816.398438 C 613.800781 816.398438 616.5 816 620.800781 814.101562 C 626.601562 811.5 636 802.101562 636 798.898438 C 636 796.101562 634.699219 796.5 630.5 800.699219 C 622.199219 809 608.5 809.5 600.898438 801.898438 C 596.601562 797.601562 594.5 793.199219 593.5 786.699219 C 593 783.601562 593.199219 782.101562 594.199219 781.199219 C 595.199219 780.398438 602.398438 780 616.601562 779.800781 L 637.5 779.5 L 637.398438 775.300781 C 637.300781 769.800781 632.601562 760.601562 627.898438 756.800781 C 620.398438 750.800781 605.800781 748.199219 597.5 751.398438 Z M 613.199219 757 C 616.699219 759.699219 618.199219 763.800781 617.800781 769.601562 L 617.5 774.5 L 594.5 774.5 L 594.199219 771.601562 C 593.601562 766.601562 598.300781 757.601562 602.398438 756 C 606 754.5 610.601562 754.898438 613.199219 757 Z M 613.199219 757 "/><path fill-rule="nonzero" fill="currentColor" d="M 438.5 837.898438 C 436.300781 838.800781 433.300781 843.601562 434.199219 844.601562 C 434.601562 844.898438 435.800781 844.199219 436.898438 843.101562 C 441.199219 838.800781 449 842.199219 449 848.398438 C 449 852.101562 444.300781 860.199219 438.5 866.5 C 435.5 869.800781 433 873.101562 433 873.800781 C 433 874.800781 435.601562 875 444.300781 874.800781 L 455.5 874.5 L 455.800781 871.101562 C 456.101562 868.199219 455.898438 867.800781 454.300781 868.601562 C 453.300781 869 449.699219 869.601562 446.300781 869.800781 C 437.898438 870.300781 438 868.699219 446.601562 860.699219 C 453.800781 854 456 850.601562 456 846.300781 C 455.898438 839.398438 446.300781 834.800781 438.5 837.898438 Z M 438.5 837.898438 "/><path fill-rule="nonzero" fill="currentColor" d="M 480.5 837.699219 C 477.800781 838.398438 475.101562 840.800781 473.199219 844.5 C 470.699219 849.101562 470.898438 864.398438 473.5 868.800781 C 475.699219 872.398438 481 876 484.101562 876 C 487.101562 876 491.601562 873.300781 493.800781 870.300781 C 498.101562 864.101562 498.398438 848.601562 494.300781 842.398438 C 491.5 838 486.398438 836.300781 480.5 837.699219 Z M 488.398438 842.199219 C 489.601562 843.898438 490 847.199219 490 856.601562 C 490 867.398438 489.800781 869 487.898438 871.398438 C 485 875 482 874.5 479.800781 870 C 477.398438 865.300781 477.300781 847.300781 479.5 843 C 481.5 839.199219 486.101562 838.800781 488.398438 842.199219 Z M 488.398438 842.199219 "/><path fill-rule="nonzero" fill="currentColor" d="M 518.101562 839.300781 C 512.898438 841.898438 511.699219 844 515.398438 844 L 518 844 L 518 857.898438 C 518 869.300781 517.699219 871.898438 516.5 872.398438 C 513.199219 873.601562 515.300781 875 520.601562 875 C 525.601562 875 526.101562 874.800781 525.398438 873.199219 C 524.898438 872.300781 524.398438 864.101562 524.199219 855 C 524 845.898438 523.601562 838.199219 523.199219 837.800781 C 522.800781 837.398438 520.5 838.101562 518.101562 839.300781 Z M 518.101562 839.300781 "/><path fill-rule="nonzero" fill="currentColor" d="M 558.800781 838.300781 C 558 838.898438 556 841.300781 554.398438 843.5 C 552.800781 845.699219 551.300781 847.699219 551 848 C 550.699219 848.300781 550.101562 849.300781 549.5 850.199219 C 549 851.101562 546.5 854.398438 544.101562 857.5 C 541.699219 860.5 540 863.398438 540.398438 863.800781 C 540.800781 864.199219 544.398438 864.699219 548.300781 865 C 555.300781 865.5 555.5 865.601562 555.800781 868.300781 C 556 870 555.398438 872 554.398438 873.101562 C 552.699219 875 552.800781 875 558.898438 875 C 564.699219 875 565 874.898438 564 873.101562 C 562.101562 869.5 562.800781 866 565.5 865 C 568.199219 864 568.898438 862 566.601562 862 C 563.898438 862 563.101562 859.199219 562.898438 849.199219 C 562.800781 838.601562 561.800781 835.898438 558.800781 838.300781 Z M 556 853.5 L 556 861 L 550.5 861 C 547.300781 861 545 860.601562 545 859.898438 C 545 858.601562 554.199219 846 555.300781 846 C 555.699219 846 556 849.398438 556 853.5 Z M 556 853.5 "/><path fill-rule="nonzero" fill="currentColor" d="M 394.199219 215.601562 C 391.398438 217.699219 393.601562 219.5 400.601562 220.800781 C 408.898438 222.398438 418.199219 227.199219 422.101562 231.898438 C 423.699219 233.800781 425.800781 237.898438 426.699219 241 C 428.398438 246.101562 428.5 253.300781 428.199219 344.5 C 428 401.300781 427.5 446.699219 426.898438 452.398438 C 425.398438 466.699219 420.898438 474.300781 411.699219 478.300781 C 404.800781 481.300781 403.101562 481.898438 398.699219 482.5 C 393.101562 483.398438 390.398438 485.101562 391.300781 487.398438 C 391.898438 488.898438 400.398438 489 496.898438 489 L 602 489 L 602.5 486.699219 C 602.800781 485.5 602.898438 474.398438 602.800781 462.101562 L 602.5 439.601562 L 599.5 438.800781 C 594.898438 437.601562 593.398438 438.601562 590.199219 445 C 583.5 458.101562 574.199219 467.699219 563.300781 472.601562 C 553.398438 477.199219 546.101562 478 516.101562 478 C 485.699219 478 481.601562 477.398438 476.800781 472.199219 C 471.398438 466.199219 471.5 469.199219 471.601562 354.5 C 471.601562 258.101562 471.800781 248 473.300781 243 C 475.601562 235.699219 479 230.800781 484.300781 227.101562 C 489.199219 223.699219 499.5 220 503.898438 220 C 507 220 508.398438 218.199219 507 216 C 506.300781 214.800781 496.398438 214.601562 450.898438 214.5 C 412.101562 214.5 395.300781 214.800781 394.199219 215.601562 Z M 394.199219 215.601562 "/></symbol>
+
+<symbol id="ic-all" viewBox="0 0 24 24"><rect x="3.8" y="3.8" width="7.2" height="7.2" rx="2.2"/><rect x="13" y="3.8" width="7.2" height="7.2" rx="2.2"/><rect x="3.8" y="13" width="7.2" height="7.2" rx="2.2"/><rect x="13" y="13" width="7.2" height="7.2" rx="2.2"/></symbol>
+<symbol id="ic-ice" viewBox="0 0 24 24"><path d="M7.3 9.6a4.7 4.7 0 0 1 9.4 0"/><path d="M6.4 9.6h11.2"/><path d="M8.2 9.6 12 20.8l3.8-11.2"/></symbol>
+<symbol id="ic-redbull" viewBox="0 0 24 24"><rect x="7.5" y="3" width="9" height="18" rx="2.5"/><path d="M12.9 7.4 10.4 12h3.2l-2.5 4.6"/></symbol>
+<symbol id="ic-salad" viewBox="0 0 24 24"><path d="M3.5 12h17c0 4.7-3.8 8.5-8.5 8.5S3.5 16.7 3.5 12z"/><circle cx="9" cy="8.8" r="1.6"/><circle cx="13.2" cy="7.6" r="1.9"/><circle cx="16.6" cy="9.6" r="1.4"/></symbol>
+<symbol id="ic-smoothie" viewBox="0 0 24 24"><path d="M8 7.5h8l-1.1 12.9H9.1z"/><path d="M8.4 12.2h7.2"/><path d="M14.6 3.2 13 7.5"/></symbol>
+<symbol id="ic-juice" viewBox="0 0 24 24"><path d="M7.2 8h9.6l-1.3 12.4H8.5z"/><path d="M7.7 12.6h8.6"/><circle cx="17.6" cy="5" r="2.4"/><path d="M17.6 2.6v4.8"/></symbol>
+<symbol id="ic-cold" viewBox="0 0 24 24"><path d="M6.6 7.8h10.8l-1.2 12.6H7.8z"/><path d="M5.4 7.8h13.2"/><path d="M14.9 3.2 13.4 7.8"/></symbol>
+<symbol id="ic-cocktail" viewBox="0 0 24 24"><path d="M4.5 6.2h15L12 14.2z"/><path d="M12 14.2v5.4"/><path d="M8.4 19.6h7.2"/><circle cx="16.8" cy="4" r="1.2"/></symbol>
+<symbol id="ic-shake" viewBox="0 0 24 24"><path d="M8 9.8h8l-1 10.6H9z"/><path d="M8.4 9.8c.4-2.2 1.8-3.5 3.6-3.5s3.2 1.3 3.6 3.5"/><path d="M15 4.4 13.7 9.8"/><circle cx="10.3" cy="4.6" r="1.1"/></symbol>
+<symbol id="ic-hot" viewBox="0 0 24 24"><path d="M4.5 9.2h11v4.4a5.5 5.5 0 0 1-11 0z"/><path d="M15.5 10.4h1.9a2.6 2.6 0 0 1 0 5.2h-1.9"/><path d="M8 6.4c0-1.1 1-1.4 1-2.5"/><path d="M11.9 6.4c0-1.1 1-1.4 1-2.5"/></symbol>
+<symbol id="ic-canned" viewBox="0 0 24 24"><rect x="7.5" y="3" width="9" height="18" rx="2.5"/><path d="M7.5 7.2h9"/><path d="M10.6 4.9h2.8"/></symbol>
+<symbol id="ic-waffle" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><path d="M3.5 9.2h17M3.5 14.8h17M9.2 3.5v17M14.8 3.5v17"/></symbol>
+<symbol id="ic-crepe" viewBox="0 0 24 24"><path d="M4.6 8h14.8L12 20.4z"/><path d="M4.6 8c2.3 1.9 4.8 2.9 7.4 2.9S17.1 9.9 19.4 8"/><path d="M9.2 13.6c1 .9 2 1.3 2.8 1.3s1.8-.4 2.8-1.3"/></symbol>
+</defs></svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="ui-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+<symbol id="ui-down" viewBox="0 0 24 24"><path d="M12 5v14M18 13l-6 6-6-6"/></symbol>
+<symbol id="ui-del" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13"/></symbol>
+<symbol id="ui-cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.1"/><path d="M12 3v2.2M12 18.8V21M4.2 7.5l1.9 1.1M17.9 15.4l1.9 1.1M4.2 16.5l1.9-1.1M17.9 8.6l1.9-1.1"/></symbol>
+<symbol id="ui-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+<symbol id="ui-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="ui-pen" viewBox="0 0 24 24"><path d="M4 20h4L20 8l-4-4L4 16v4zM14 6l4 4"/></symbol>
+</defs></svg>
+
+<!-- ======================= password gate ======================= -->
+<section class="screen" id="s-gate">
+  <form class="panel" id="f-gate">
+    <span class="mark" aria-hidden="true"><svg viewBox="0 0 505.85 752.83" aria-hidden="true"><use href="#ic-logo"/></svg></span>
+    <h1>لوحة تحكم المنيو</h1>
+    <p class="sub">La Roche Cafe · إدارة الأسعار والمنتجات</p>
+    <label class="sr" for="pw">كلمة المرور</label>
+    <div class="row">
+      <input class="fld" type="password" id="pw" autocomplete="current-password" required>
+      <button class="btn" type="submit" id="pw-go">دخول</button>
+    </div>
+    <p class="err" id="pw-err" role="alert"></p>
+  </form>
+</section>
+
+<!-- ======================= one-time connection setup ======================= -->
+<section class="screen" id="s-setup" hidden>
+  <form class="panel wide" id="f-setup">
+    <h1>ربط لوحة التحكم — مرة واحدة فقط</h1>
+    <p class="sub">هذه الخطوة تتم مرة واحدة على هذا الجهاز، وتأخذ حوالي نصف دقيقة.</p>
+    <ol class="steps">
+      <li>سجّل الدخول إلى حساب GitHub الخاص بالمنيو، ثم اضغط
+        <a id="tok-link" target="_blank" rel="noopener"><b>هذا الرابط</b></a>.
+        كل الخيارات ستكون جاهزة.</li>
+      <li>انزل لأسفل الصفحة واضغط <code class="k">Generate token</code>.</li>
+      <li>انسخ الكود الذي يظهر (يبدأ بـ <bdi><code class="k">ghp_</code></bdi>) والصقه هنا:</li>
+    </ol>
+    <div class="row">
+      <input class="fld" type="password" id="tok" dir="ltr" autocomplete="off"
+             spellcheck="false" placeholder="ghp_…" required>
+      <button class="btn" type="submit" id="tok-go">تحقق</button>
+    </div>
+    <p class="err" id="tok-err" role="alert"></p>
+    <p class="note">الكود يُحفظ في هذا المتصفح فقط ولا يُرسل إلى أي مكان آخر. إذا لم ترغب بالربط
+      الآن يمكنك <button type="button" class="btn ghost sm" id="skip-tok">المتابعة بدون حفظ مباشر</button></p>
+  </form>
+</section>
+
+<!-- ======================= editor ======================= -->
+<div id="s-app" hidden>
+  <header class="top">
+    <div class="wrap">
+      <span class="brand">La&nbsp;Roche · المنيو</span>
+      <div class="search-wrap">
+        <label class="sr" for="find">بحث</label>
+        <input class="fld" type="search" id="find" placeholder="ابحث عن منتج…">
+      </div>
+      <div class="tools">
+        <span class="pill" id="conn"><span class="dot"></span><span id="conn-t">متصل</span></span>
+        <button class="icobtn" id="open-cog" title="إعدادات" aria-label="إعدادات">
+          <svg aria-hidden="true"><use href="#ui-cog"/></svg></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="cats"></div>
+    <button class="btn ghost" id="add-cat" type="button">
+      <svg aria-hidden="true" style="width:1rem;height:1rem;fill:none;stroke:currentColor;stroke-width:2"><use href="#ui-plus"/></svg>
+      قسم جديد
+    </button>
+  </main>
+
+  <div class="bar">
+    <div class="wrap">
+      <button class="btn" id="save" type="button" disabled>حفظ ونشر</button>
+      <span class="msg" id="msg">لا تغييرات غير محفوظة</span>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= dialogs ======================= -->
+<dialog id="dlg-cat"><form class="sheet" id="f-cat" method="dialog">
+  <h2 id="cat-title">قسم جديد</h2>
+  <div class="grid">
+    <label><span class="lbl">الاسم بالعربي</span><input class="fld" id="c-ar" required></label>
+    <label><span class="lbl">الاسم بالتركي</span><input class="fld" id="c-tr" required></label>
+    <div><span class="lbl">الأيقونة</span><div class="icons" id="c-icons"></div></div>
+  </div>
+  <div class="foot">
+    <button class="btn ghost" type="button" data-x>إلغاء</button>
+    <button class="btn" type="submit">حفظ</button>
+  </div>
+</form></dialog>
+
+<dialog id="dlg-cog"><form class="sheet" id="f-cog" method="dialog">
+  <h2>إعدادات</h2>
+  <div class="grid">
+    <div>
+      <span class="lbl">حالة الربط</span>
+      <div class="row" style="align-items:center">
+        <span id="cog-conn" class="note" style="flex:1 1 auto"></span>
+        <button class="btn ghost sm" type="button" id="cog-unlink">فصل</button>
+      </div>
+    </div>
+    <div>
+      <span class="lbl">تغيير كلمة المرور</span>
+      <div class="row">
+        <input class="fld" type="password" id="np" placeholder="كلمة مرور جديدة" autocomplete="new-password">
+        <button class="btn ghost sm" type="button" id="np-go">تعيين</button>
+      </div>
+      <p class="note" id="np-msg">تُطبّق بعد الحفظ.</p>
+    </div>
+    <div>
+      <span class="lbl">نسخة احتياطية</span>
+      <button class="btn ghost sm" type="button" id="dl">تنزيل ملف المنيو</button>
+    </div>
+  </div>
+  <div class="foot"><button class="btn" type="submit">تم</button></div>
+</form></dialog>
+
+<input type="file" id="pick" accept="image/*" hidden>
+
+<script>
+/* ===================================================================
+   La Roche — menu admin
+   Data lives in menu.json next to index.html. This page edits a copy
+   in memory and writes it back through the GitHub contents API using a
+   token the owner supplies once; the token is kept in this browser only
+   and is never part of the repository.
+   =================================================================== */
+const OWNER = "otillion", REPO = "laroche-menu", BRANCH = "main";
+const API   = "https://api.github.com/repos/" + OWNER + "/" + REPO;
+const ROOT  = "../";                                  // this page sits in /admin/
+const BASE  = "https://owlmenu.net/laroche/wp-content/uploads/";
+const TOKKEY = "lr.menu.token";
+const TOKURL = "https://github.com/settings/tokens/new"
+             + "?scopes=public_repo&description=La%20Roche%20Menu";
+const ICONS = ["ice","redbull","salad","smoothie","juice","cold",
+               "cocktail","shake","hot","canned","waffle","crepe"];
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s)
+  .replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+let D = null;            // the whole menu.json
+let token = null;        // never persisted anywhere but localStorage
+let dirty = false;
+let pendingImgs = [];    // [{path, b64}] staged for upload on save
+const previews = {};     // path -> data URL, so staged images show before upload
+let newAuth = null;      // set when the password is changed
+
+/* ---------- small helpers ---------- */
+const hexOf = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,"0")).join("");
+const bytesOf = hex => new Uint8Array((hex.match(/../g)||[]).map(h => parseInt(h,16)));
+
+async function derive(pw, saltHex, iter){
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw),
+    "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits(
+    {name:"PBKDF2", salt:bytesOf(saltHex), iterations:iter, hash:"SHA-256"}, key, 256);
+  return hexOf(bits);
+}
+function b64enc(str){
+  const b = new TextEncoder().encode(str);
+  let s = "";
+  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i+0x8000));
+  return btoa(s);
+}
+const TRMAP = {"ı":"i","İ":"i","ş":"s","Ş":"s","ğ":"g","Ğ":"g",
+               "ç":"c","Ç":"c","ö":"o","Ö":"o","ü":"u","Ü":"u"};
+const slug = s => String(s).replace(/[ıİşŞğĞçÇöÖüÜ]/g, c => TRMAP[c])
+  .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")
+  .replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,24) || "x";
+
+/* shown in place of a photo until one is chosen */
+const NOIMG = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
+  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 30'>" +
+  "<rect width='40' height='30' fill='%23e7ece9'/>" +
+  "<g fill='none' stroke='%239aa49f' stroke-width='1.4' stroke-linecap='round'>" +
+  "<rect x='13' y='11' width='14' height='10' rx='2'/><circle cx='20' cy='16' r='3'/>" +
+  "<path d='M17 11l1-1.6h4l1 1.6'/></g></svg>");
+
+/* an image is a file in this repo, an absolute URL, or a path in the old uploads folder */
+const own = p => /^(https?:|data:|\/|img\/)/.test(p);
+function imgURL(it){
+  const p = it.img || "";
+  if (previews[p]) return previews[p];
+  if (!p) return NOIMG;
+  if (own(p)) return /^(https?:|data:)/.test(p) ? p : ROOT + p;
+  const s = (it.s||[])[0];
+  if (!s) return encodeURI(BASE + p);
+  const i = p.lastIndexOf(".");
+  return encodeURI(BASE + p.slice(0,i) + s + p.slice(i));
+}
+
+/* ---------- load ---------- */
+async function loadData(){
+  const r = await fetch(ROOT + "menu.json?t=" + Date.now(), {cache:"no-store"});
+  if (!r.ok) throw new Error("menu.json " + r.status);
+  const j = await r.json();
+  if (!j || !Array.isArray(j.cats)) throw new Error("menu.json is not valid");
+  return j;
+}
+
+/* ---------- gate ---------- */
+$("#f-gate").addEventListener("submit", async e => {
+  e.preventDefault();
+  const btn = $("#pw-go"), err = $("#pw-err");
+  btn.disabled = true; err.textContent = "";
+  try{
+    if (!D) D = await loadData();
+    const a = D.auth;
+    if (!a || !a.salt || !a.hash){ err.textContent = "ملف المنيو لا يحتوي كلمة مرور."; return; }
+    const got = await derive($("#pw").value, a.salt, a.iter || 120000);
+    if (got !== a.hash){ err.textContent = "كلمة المرور غير صحيحة."; $("#pw").select(); return; }
+    sessionStorage.setItem("lr.menu.ok","1");
+    afterGate();
+  }catch(ex){
+    err.textContent = "تعذّر تحميل بيانات المنيو: " + ex.message;
+  }finally{ btn.disabled = false; }
+});
+
+function afterGate(){
+  $("#s-gate").hidden = true;
+  token = localStorage.getItem(TOKKEY);
+  if (token) startApp();
+  else { $("#s-setup").hidden = false; $("#tok-link").href = TOKURL; $("#tok").focus(); }
+}
+
+/* ---------- connection setup ---------- */
+$("#f-setup").addEventListener("submit", async e => {
+  e.preventDefault();
+  const btn = $("#tok-go"), err = $("#tok-err"), t = $("#tok").value.trim();
+  btn.disabled = true; err.textContent = "جارٍ التحقق…";
+  try{
+    const r = await fetch(API, {headers:{Authorization:"Bearer " + t,
+      Accept:"application/vnd.github+json"}});
+    if (r.status === 401){ err.textContent = "الكود غير صحيح أو منتهي."; return; }
+    if (!r.ok){ err.textContent = "تعذّر التحقق (" + r.status + ")."; return; }
+    const j = await r.json();
+    if (!j.permissions || !j.permissions.push){
+      err.textContent = "هذا الحساب لا يملك صلاحية التعديل على المستودع.";
+      return;
+    }
+    localStorage.setItem(TOKKEY, t);
+    token = t;
+    $("#s-setup").hidden = true;
+    startApp();
+  }catch(ex){ err.textContent = "تعذّر الاتصال: " + ex.message; }
+  finally{ btn.disabled = false; }
+});
+$("#skip-tok").addEventListener("click", () => {
+  token = null; $("#s-setup").hidden = true; startApp();
+});
+
+/* ---------- editor ---------- */
+function startApp(){
+  $("#s-app").hidden = false;
+  connPill();
+  draw();
+}
+function connPill(){
+  const p = $("#conn");
+  p.classList.toggle("off", !token);
+  $("#conn-t").textContent = token ? "متصل" : "غير مربوط";
+  $("#save").textContent = token ? "حفظ ونشر" : "تنزيل الملف";
+}
+
+function iconSVG(k){
+  return '<svg aria-hidden="true"><use href="#ic-' + esc(k || "all") + '"/></svg>';
+}
+function itemRow(ci, ii, it){
+  const k = ci + "." + ii;
+  return '<div class="it" data-k="' + k + '">' +
+    '<button class="shot" type="button" data-act="img" title="تغيير الصورة">' +
+      '<img src="' + esc(imgURL(it)) + '" alt="" loading="lazy">' +
+      '<span class="cam">تغيير</span></button>' +
+    '<div class="names">' +
+      '<label class="n1"><span class="lbl">عربي</span>' +
+        '<input class="fld" data-f="ar" value="' + esc(it.ar) + '"></label>' +
+      '<label class="n2"><span class="lbl">تركي</span>' +
+        '<input class="fld" data-f="tr" value="' + esc(it.tr) + '"></label>' +
+    '</div>' +
+    '<div class="meta">' +
+      '<span class="price"><input class="fld" data-f="p" type="number" min="0" step="1" ' +
+        'inputmode="numeric" value="' + (it.p || "") + '" placeholder="—">' +
+        '<span class="unit">₺</span></span>' +
+      '<span class="acts">' +
+        '<button class="icobtn" type="button" data-act="up" aria-label="أعلى"><svg><use href="#ui-up"/></svg></button>' +
+        '<button class="icobtn" type="button" data-act="down" aria-label="أسفل"><svg><use href="#ui-down"/></svg></button>' +
+        '<button class="icobtn del" type="button" data-act="del" aria-label="حذف"><svg><use href="#ui-del"/></svg></button>' +
+      '</span>' +
+    '</div>' +
+  '</div>';
+}
+function draw(){
+  const open = {};
+  document.querySelectorAll(".cat[data-open='1']").forEach(e => open[e.dataset.c] = 1);
+  $("#cats").innerHTML = D.cats.map((c, ci) =>
+    '<section class="cat" data-c="' + ci + '" data-open="' + (open[ci] ? 1 : 0) + '">' +
+      '<button class="cat-head" type="button" data-act="toggle">' +
+        '<span class="disc">' + iconSVG(c.icon) + '</span>' +
+        '<span class="nm">' + esc(c.ar) + '<small>' + esc(c.tr) + ' · ' +
+          c.items.length + ' منتج</small></span>' +
+        '<svg class="chev" style="width:1.1rem;height:1.1rem;fill:none;stroke:currentColor;stroke-width:2"><use href="#ui-chev"/></svg>' +
+      '</button>' +
+      '<div class="cat-body">' +
+        '<div class="cat-tools">' +
+          '<button class="btn dim sm" type="button" data-act="add-item">+ منتج</button>' +
+          '<button class="btn ghost sm" type="button" data-act="edit-cat">تعديل القسم</button>' +
+          '<span style="margin-inline-start:auto;display:flex;gap:.3rem">' +
+            '<button class="icobtn" type="button" data-act="cat-up" aria-label="أعلى"><svg><use href="#ui-up"/></svg></button>' +
+            '<button class="icobtn" type="button" data-act="cat-down" aria-label="أسفل"><svg><use href="#ui-down"/></svg></button>' +
+            '<button class="icobtn del" type="button" data-act="cat-del" aria-label="حذف القسم"><svg><use href="#ui-del"/></svg></button>' +
+          '</span>' +
+        '</div>' +
+        c.items.map((it, ii) => itemRow(ci, ii, it)).join("") +
+      '</div>' +
+    '</section>').join("");
+  filter();
+}
+
+/* ---------- edits ---------- */
+function touch(){
+  dirty = true;
+  $("#save").disabled = false;
+  say("تغييرات غير محفوظة", "");
+}
+function say(text, cls){
+  const m = $("#msg"); m.textContent = text; m.className = "msg " + (cls || "");
+}
+function at(k){
+  const [ci, ii] = k.split(".").map(Number);
+  return D.cats[ci].items[ii];
+}
+$("#cats").addEventListener("input", e => {
+  const f = e.target.dataset.f; if (!f) return;
+  const it = at(e.target.closest(".it").dataset.k);
+  it[f] = f === "p" ? (parseInt(e.target.value, 10) || 0) : e.target.value;
+  touch();
+});
+$("#cats").addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const act = b.dataset.act;
+  const sec = b.closest(".cat"), ci = +sec.dataset.c;
+  const row = b.closest(".it"), ii = row ? +row.dataset.k.split(".")[1] : -1;
+  const c = D.cats[ci];
+
+  if (act === "toggle"){ sec.dataset.open = sec.dataset.open === "1" ? "0" : "1"; return; }
+  if (act === "img"){ pickFor = {ci, ii}; $("#pick").value = ""; $("#pick").click(); return; }
+  if (act === "up" || act === "down"){
+    const j = ii + (act === "up" ? -1 : 1);
+    if (j < 0 || j >= c.items.length) return;
+    [c.items[ii], c.items[j]] = [c.items[j], c.items[ii]];
+    touch(); redraw(ci); return;
+  }
+  if (act === "del"){
+    const it = c.items[ii];
+    if (!confirm('حذف "' + it.ar + '" من المنيو؟')) return;
+    c.items.splice(ii, 1); touch(); redraw(ci); return;
+  }
+  if (act === "add-item"){
+    c.items.push({ar:"منتج جديد", tr:"Yeni ürün", p:0, img:""});
+    touch(); redraw(ci);
+    const rows = sec.querySelectorAll(".it");
+    const last = rows[rows.length - 1];
+    if (last){ last.scrollIntoView({block:"center", behavior:"smooth"});
+      last.querySelector("[data-f='ar']").select(); }
+    return;
+  }
+  if (act === "edit-cat"){ catDialog(ci); return; }
+  if (act === "cat-up" || act === "cat-down"){
+    const j = ci + (act === "cat-up" ? -1 : 1);
+    if (j < 0 || j >= D.cats.length) return;
+    [D.cats[ci], D.cats[j]] = [D.cats[j], D.cats[ci]];
+    touch(); draw(); return;
+  }
+  if (act === "cat-del"){
+    if (!confirm('حذف قسم "' + c.ar + '" و' + c.items.length + ' منتج داخله؟')) return;
+    D.cats.splice(ci, 1); touch(); draw(); return;
+  }
+});
+function redraw(ci){
+  const sec = document.querySelector(".cat[data-c='" + ci + "']");
+  const wasOpen = sec.dataset.open;
+  draw();
+  const now = document.querySelector(".cat[data-c='" + ci + "']");
+  if (now) now.dataset.open = wasOpen;
+}
+
+/* ---------- search ---------- */
+function filter(){
+  const q = $("#find").value.trim().toLowerCase();
+  document.querySelectorAll(".cat").forEach(sec => {
+    const c = D.cats[+sec.dataset.c];
+    let hits = 0;
+    sec.querySelectorAll(".it").forEach(row => {
+      const it = at(row.dataset.k);
+      const on = !q || (it.ar + " " + it.tr).toLowerCase().includes(q);
+      row.classList.toggle("gone", !on);
+      if (on) hits++;
+    });
+    const catHit = !q || (c.ar + " " + c.tr).toLowerCase().includes(q);
+    sec.hidden = !!q && !hits && !catHit;
+    if (q && hits) sec.dataset.open = "1";
+  });
+}
+$("#find").addEventListener("input", filter);
+
+/* ---------- images ---------- */
+let pickFor = null;
+$("#pick").addEventListener("change", async e => {
+  const file = e.target.files && e.target.files[0];
+  if (!file || !pickFor) return;
+  const {ci, ii} = pickFor;
+  try{
+    const url = await shrink(file);
+    const it = D.cats[ci].items[ii];
+    const ext = url.indexOf("data:image/webp") === 0 ? "webp" : "jpg";
+    const path = "img/" + slug(it.tr || it.ar) + "-" + Date.now().toString(36) + "." + ext;
+    previews[path] = url;
+    pendingImgs.push({path, b64: url.slice(url.indexOf(",") + 1)});
+    it.img = path; delete it.s;
+    touch(); redraw(ci);
+  }catch(ex){ alert("تعذّر تجهيز الصورة: " + ex.message); }
+});
+async function shrink(file){
+  const W = 800, H = 600;
+  const bmp = await loadBitmap(file);
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const g = cv.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, W, H);
+  const r = Math.max(W / bmp.width, H / bmp.height);
+  const w = bmp.width * r, h = bmp.height * r;
+  g.drawImage(bmp, (W - w) / 2, (H - h) / 2, w, h);
+  let out = cv.toDataURL("image/webp", 0.82);
+  if (out.indexOf("data:image/webp") !== 0) out = cv.toDataURL("image/jpeg", 0.85);
+  return out;
+}
+function loadBitmap(file){
+  if (window.createImageBitmap) return createImageBitmap(file);
+  return new Promise((res, rej) => {
+    const u = URL.createObjectURL(file), im = new Image();
+    im.onload = () => { res(im); URL.revokeObjectURL(u); };
+    im.onerror = () => rej(new Error("صيغة غير مدعومة"));
+    im.src = u;
+  });
+}
+
+/* ---------- category dialog ---------- */
+let catEdit = -1;
+function catDialog(ci){
+  catEdit = ci;
+  const c = ci < 0 ? {ar:"", tr:"", icon:"ice"} : D.cats[ci];
+  $("#cat-title").textContent = ci < 0 ? "قسم جديد" : "تعديل القسم";
+  $("#c-ar").value = c.ar; $("#c-tr").value = c.tr;
+  $("#c-icons").innerHTML = ICONS.map(k =>
+    '<label><input type="radio" name="ico" value="' + k + '"' +
+    ((c.icon || "ice") === k ? " checked" : "") + '>' + iconSVG(k) + '</label>').join("");
+  $("#dlg-cat").showModal();
+}
+$("#add-cat").addEventListener("click", () => catDialog(-1));
+$("#f-cat").addEventListener("submit", e => {
+  const ar = $("#c-ar").value.trim(), tr = $("#c-tr").value.trim();
+  const ico = ($("#c-icons input:checked") || {}).value || "ice";
+  if (!ar || !tr){ e.preventDefault(); return; }
+  if (catEdit < 0){
+    let id = slug(tr), n = 1;
+    while (D.cats.some(c => c.id === id)) id = slug(tr) + "-" + (++n);
+    D.cats.push({id, ar, tr, icon:ico, items:[]});
+  }else{
+    Object.assign(D.cats[catEdit], {ar, tr, icon:ico});
+  }
+  touch(); setTimeout(draw, 0);
+});
+document.querySelectorAll("[data-x]").forEach(b =>
+  b.addEventListener("click", () => b.closest("dialog").close()));
+
+/* ---------- settings ---------- */
+$("#open-cog").addEventListener("click", () => {
+  $("#cog-conn").textContent = token
+    ? "مربوط بـ GitHub — الحفظ ينشر مباشرة."
+    : "غير مربوط — الحفظ ينزّل ملفاً فقط.";
+  $("#cog-unlink").textContent = token ? "فصل" : "ربط الآن";
+  $("#np-msg").textContent = "تُطبّق بعد الحفظ.";
+  $("#dlg-cog").showModal();
+});
+$("#cog-unlink").addEventListener("click", () => {
+  if (token){ localStorage.removeItem(TOKKEY); token = null; connPill(); $("#dlg-cog").close(); }
+  else { $("#dlg-cog").close(); $("#s-app").hidden = true;
+         $("#s-setup").hidden = false; $("#tok-link").href = TOKURL; }
+});
+$("#np-go").addEventListener("click", async () => {
+  const pw = $("#np").value;
+  if (pw.length < 6){ $("#np-msg").textContent = "استخدم ٦ أحرف على الأقل."; return; }
+  const salt = hexOf(crypto.getRandomValues(new Uint8Array(16)));
+  const iter = 120000;
+  newAuth = {salt, iter, hash: await derive(pw, salt, iter)};
+  $("#np").value = "";
+  $("#np-msg").textContent = "تم التعيين — اضغط حفظ لتطبيقها.";
+  touch();
+});
+$("#dl").addEventListener("click", () => download());
+function download(){
+  const blob = new Blob([serialise()], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "menu.json";
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ---------- save ---------- */
+function serialise(){
+  const out = JSON.parse(JSON.stringify(D));
+  if (newAuth) out.auth = newAuth;
+  out.v = (out.v | 0) + 1;
+  return JSON.stringify(out, null, 1);
+}
+async function ghSha(path){
+  const r = await fetch(API + "/contents/" + path + "?ref=" + BRANCH, {headers: ghHead()});
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error("قراءة " + path + ": " + r.status);
+  return (await r.json()).sha;
+}
+const ghHead = () => ({Authorization:"Bearer " + token,
+  Accept:"application/vnd.github+json", "Content-Type":"application/json"});
+async function ghPut(path, b64, message){
+  const body = {message, content:b64, branch:BRANCH};
+  const sha = await ghSha(path);
+  if (sha) body.sha = sha;
+  const r = await fetch(API + "/contents/" + path,
+    {method:"PUT", headers: ghHead(), body: JSON.stringify(body)});
+  if (!r.ok){
+    let d = ""; try{ d = (await r.json()).message || ""; }catch(e){}
+    throw new Error(path + " — " + r.status + " " + d);
+  }
+}
+/* things worth a second look before they go live */
+function problems(){
+  const p = [];
+  D.cats.forEach(c => {
+    if (!String(c.ar).trim() || !String(c.tr).trim()) p.push("قسم بدون اسم كامل");
+    c.items.forEach(i => {
+      if (!String(i.ar).trim() || !String(i.tr).trim())
+        p.push('منتج بدون اسم كامل في "' + c.ar + '"');
+      else if (!i.img) p.push('"' + i.ar + '" بدون صورة');
+    });
+  });
+  return p;
+}
+$("#save").addEventListener("click", async () => {
+  const btn = $("#save");
+  const ps = problems();
+  if (ps.length && !confirm("تنبيه:\n• " + ps.slice(0,6).join("\n• ")
+      + (ps.length > 6 ? "\n• …و" + (ps.length - 6) + " غير ذلك" : "")
+      + "\n\nهل تريد الحفظ على أي حال؟")) return;
+  if (!token){
+    download();
+    say("تم تنزيل الملف. ارفعه إلى المستودع لينشر.", "ok");
+    return;
+  }
+  btn.disabled = true;
+  try{
+    let n = 0;
+    for (const im of pendingImgs){
+      n++; say("رفع الصور " + n + "/" + pendingImgs.length + "…", "");
+      await ghPut(im.path, im.b64, "menu: add image " + im.path);
+    }
+    say("حفظ المنيو…", "");
+    const json = serialise();
+    await ghPut("menu.json", b64enc(json), "menu: update prices and items");
+    D = JSON.parse(json);
+    if (newAuth){ newAuth = null; }
+    pendingImgs = []; dirty = false;
+    say("تم الحفظ. الموقع يتحدّث خلال دقيقة.", "ok");
+  }catch(ex){
+    say("فشل الحفظ: " + ex.message, "bad");
+    btn.disabled = false;
+    return;
+  }
+  btn.disabled = true;
+});
+addEventListener("beforeunload", e => { if (dirty){ e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------- boot ---------- */
+(async () => {
+  if (!window.crypto || !crypto.subtle){
+    $("#pw-err").textContent = "افتح الصفحة عبر https.";
+    return;
+  }
+  try{ D = await loadData(); }catch(e){}
+  if (sessionStorage.getItem("lr.menu.ok") === "1" && D) afterGate();
+  else $("#pw").focus();
+})();
+</script>
+</body>
+</html>
