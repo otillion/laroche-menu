@@ -1,9 +1,9 @@
 {
  "v": 1,
  "auth": {
-  "salt": "7444de1ac609123e2e74800789842194",
-  "iter": 120000,
-  "hash": "fc955a65ef1cd1f7c649016d3928359789bcaf5e0fefbc67d0b41d6f048f514f"
+  "salt": "9dcfa599d793b3a4144bb6e895e82eb8",
+  "iter": 100000,
+  "hash": "662f7a5d7dd6dca35e3e46e4b426ff7d85a39405baad95b7ff9fa47e775cf308"
  },
  "cats": [
   {
@@ -1192,5 +1192,6 @@
     }
    ]
   }
- ]
+ ],
+ "api": "https://laroche-menu-api.jalaljalab270.workers.dev"
 }
