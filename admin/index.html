@@ -305,10 +305,11 @@ dialog::backdrop{background:rgba(8,12,10,.6)}
    and is never part of the repository.
    =================================================================== */
 const OWNER = "otillion", REPO = "laroche-menu", BRANCH = "main";
-const API   = "https://api.github.com/repos/" + OWNER + "/" + REPO;
+const GHAPI = "https://api.github.com/repos/" + OWNER + "/" + REPO;
 const ROOT  = "../";                                  // this page sits in /admin/
 const BASE  = "https://owlmenu.net/laroche/wp-content/uploads/";
 const TOKKEY = "lr.menu.token";
+const SESSKEY = "lr.menu.sess";
 const TOKURL = "https://github.com/settings/tokens/new"
              + "?scopes=public_repo&description=La%20Roche%20Menu";
 const ICONS = ["ice","redbull","salad","smoothie","juice","cold",
@@ -319,7 +320,9 @@ const esc = s => String(s == null ? "" : s)
   .replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 let D = null;            // the whole menu.json
-let token = null;        // never persisted anywhere but localStorage
+let SRV = "";            // the admin API (a Cloudflare Worker), from menu.json
+let sess = null;         // short-lived session token from that API
+let token = null;        // GitHub token — only in the no-API fallback mode
 let dirty = false;
 let pendingImgs = [];    // [{path, b64}] staged for upload on save
 const previews = {};     // path -> data URL, so staged images show before upload
@@ -369,6 +372,34 @@ function imgURL(it){
   return encodeURI(BASE + p.slice(0,i) + s + p.slice(i));
 }
 
+/* ---------- admin API ----------
+   When menu.json carries an "api" URL, everything goes through that
+   service: it holds the GitHub token, so this page never sees one and
+   the owner only needs the password. */
+async function srv(path, body){
+  const r = await fetch(SRV.replace(/\/+$/, "") + path, {
+    method: "POST", headers: {"content-type": "application/json"},
+    body: JSON.stringify(Object.assign({token: sess}, body))
+  });
+  let j = {};
+  try{ j = await r.json(); }catch(e){}
+  if (!r.ok){
+    const e = new Error(j.error || ("HTTP " + r.status));
+    e.code = j.error; e.status = r.status;
+    throw e;
+  }
+  return j;
+}
+const SRVMSG = {
+  "bad-password": "كلمة المرور غير صحيحة.",
+  "session": "انتهت الجلسة — أدخل كلمة المرور من جديد.",
+  "kv-missing": "تغيير كلمة المرور يحتاج تفعيل التخزين (KV) على الخادم.",
+  "too-big": "الصورة كبيرة جداً.",
+  "bad-path": "اسم ملف الصورة غير صالح.",
+  "no-token-configured": "الخادم غير مكتمل الإعداد (ينقصه توكن GitHub)."
+};
+const srvMsg = e => SRVMSG[e.code] || e.message;
+
 /* ---------- load ---------- */
 async function loadData(){
   const r = await fetch(ROOT + "menu.json?t=" + Date.now(), {cache:"no-store"});
@@ -385,22 +416,38 @@ $("#f-gate").addEventListener("submit", async e => {
   btn.disabled = true; err.textContent = "";
   try{
     if (!D) D = await loadData();
-    const a = D.auth;
-    if (!a || !a.salt || !a.hash){ err.textContent = "ملف المنيو لا يحتوي كلمة مرور."; return; }
-    const got = await derive($("#pw").value, a.salt, a.iter || 120000);
-    if (got !== a.hash){ err.textContent = "كلمة المرور غير صحيحة."; $("#pw").select(); return; }
+    SRV = D.api || "";
+    if (SRV){
+      const j = await srv("/login", {pw: $("#pw").value});
+      sess = j.token;
+      sessionStorage.setItem(SESSKEY, sess);
+    }else{
+      const a = D.auth;
+      if (!a || !a.salt || !a.hash){ err.textContent = "ملف المنيو لا يحتوي كلمة مرور."; return; }
+      const got = await derive($("#pw").value, a.salt, a.iter || 120000);
+      if (got !== a.hash){ err.textContent = "كلمة المرور غير صحيحة."; $("#pw").select(); return; }
+    }
     sessionStorage.setItem("lr.menu.ok","1");
     afterGate();
   }catch(ex){
-    err.textContent = "تعذّر تحميل بيانات المنيو: " + ex.message;
+    err.textContent = ex.code ? srvMsg(ex) : ("تعذّر تحميل بيانات المنيو: " + ex.message);
+    if (ex.code === "bad-password") $("#pw").select();
   }finally{ btn.disabled = false; }
 });
 
 function afterGate(){
   $("#s-gate").hidden = true;
+  if (SRV){ startApp(); return; }           // the service handles publishing
   token = localStorage.getItem(TOKKEY);
   if (token) startApp();
   else { $("#s-setup").hidden = false; $("#tok-link").href = TOKURL; $("#tok").focus(); }
+}
+
+/* the session died mid-edit: back to the password, edits kept in memory */
+function relogin(){
+  sess = null; sessionStorage.removeItem(SESSKEY); sessionStorage.removeItem("lr.menu.ok");
+  $("#s-app").hidden = true; $("#s-gate").hidden = false;
+  $("#pw").value = ""; $("#pw-err").textContent = SRVMSG.session; $("#pw").focus();
 }
 
 /* ---------- connection setup ---------- */
@@ -409,7 +456,7 @@ $("#f-setup").addEventListener("submit", async e => {
   const btn = $("#tok-go"), err = $("#tok-err"), t = $("#tok").value.trim();
   btn.disabled = true; err.textContent = "جارٍ التحقق…";
   try{
-    const r = await fetch(API, {headers:{Authorization:"Bearer " + t,
+    const r = await fetch(GHAPI, {headers:{Authorization:"Bearer " + t,
       Accept:"application/vnd.github+json"}});
     if (r.status === 401){ err.textContent = "الكود غير صحيح أو منتهي."; return; }
     if (!r.ok){ err.textContent = "تعذّر التحقق (" + r.status + ")."; return; }
@@ -436,10 +483,10 @@ function startApp(){
   draw();
 }
 function connPill(){
-  const p = $("#conn");
-  p.classList.toggle("off", !token);
-  $("#conn-t").textContent = token ? "متصل" : "غير مربوط";
-  $("#save").textContent = token ? "حفظ ونشر" : "تنزيل الملف";
+  const live = !!SRV || !!token;
+  $("#conn").classList.toggle("off", !live);
+  $("#conn-t").textContent = live ? "متصل" : "غير مربوط";
+  $("#save").textContent = live ? "حفظ ونشر" : "تنزيل الملف";
 }
 
 function iconSVG(k){
@@ -655,11 +702,13 @@ document.querySelectorAll("[data-x]").forEach(b =>
 
 /* ---------- settings ---------- */
 $("#open-cog").addEventListener("click", () => {
-  $("#cog-conn").textContent = token
-    ? "مربوط بـ GitHub — الحفظ ينشر مباشرة."
-    : "غير مربوط — الحفظ ينزّل ملفاً فقط.";
+  $("#cog-conn").textContent = SRV
+    ? "الحفظ يتم عبر الخادم — لا حاجة لأي إعداد على هذا الجهاز."
+    : token ? "مربوط بـ GitHub — الحفظ ينشر مباشرة."
+            : "غير مربوط — الحفظ ينزّل ملفاً فقط.";
+  $("#cog-unlink").hidden = !!SRV;
   $("#cog-unlink").textContent = token ? "فصل" : "ربط الآن";
-  $("#np-msg").textContent = "تُطبّق بعد الحفظ.";
+  $("#np-msg").textContent = SRV ? "تُطبّق فوراً." : "تُطبّق بعد الحفظ.";
   $("#dlg-cog").showModal();
 });
 $("#cog-unlink").addEventListener("click", () => {
@@ -668,11 +717,24 @@ $("#cog-unlink").addEventListener("click", () => {
          $("#s-setup").hidden = false; $("#tok-link").href = TOKURL; }
 });
 $("#np-go").addEventListener("click", async () => {
-  const pw = $("#np").value;
-  if (pw.length < 6){ $("#np-msg").textContent = "استخدم ٦ أحرف على الأقل."; return; }
+  const pw = $("#np").value, btn = $("#np-go");
+  if (pw.length < 8){ $("#np-msg").textContent = "استخدم ٨ أحرف على الأقل."; return; }
   const salt = hexOf(crypto.getRandomValues(new Uint8Array(16)));
-  const iter = 120000;
-  newAuth = {salt, iter, hash: await derive(pw, salt, iter)};
+  const iter = 310000;
+  const auth = {salt, iter, hash: await derive(pw, salt, iter)};
+  if (SRV){
+    // the server stores it, so it applies at once — and ends this session
+    btn.disabled = true; $("#np-msg").textContent = "جارٍ التغيير…";
+    try{
+      await srv("/password", auth);
+      $("#np").value = "";
+      $("#np-msg").textContent = "تم التغيير. سجّل الدخول بكلمة المرور الجديدة.";
+      setTimeout(() => { $("#dlg-cog").close(); relogin(); }, 1600);
+    }catch(ex){ $("#np-msg").textContent = srvMsg(ex); }
+    finally{ btn.disabled = false; }
+    return;
+  }
+  newAuth = auth;
   $("#np").value = "";
   $("#np-msg").textContent = "تم التعيين — اضغط حفظ لتطبيقها.";
   touch();
@@ -693,7 +755,7 @@ function serialise(){
   return JSON.stringify(out, null, 1);
 }
 async function ghSha(path){
-  const r = await fetch(API + "/contents/" + path + "?ref=" + BRANCH, {headers: ghHead()});
+  const r = await fetch(GHAPI + "/contents/" + path + "?ref=" + BRANCH, {headers: ghHead()});
   if (r.status === 404) return null;
   if (!r.ok) throw new Error("قراءة " + path + ": " + r.status);
   return (await r.json()).sha;
@@ -704,7 +766,7 @@ async function ghPut(path, b64, message){
   const body = {message, content:b64, branch:BRANCH};
   const sha = await ghSha(path);
   if (sha) body.sha = sha;
-  const r = await fetch(API + "/contents/" + path,
+  const r = await fetch(GHAPI + "/contents/" + path,
     {method:"PUT", headers: ghHead(), body: JSON.stringify(body)});
   if (!r.ok){
     let d = ""; try{ d = (await r.json()).message || ""; }catch(e){}
@@ -730,27 +792,30 @@ $("#save").addEventListener("click", async () => {
   if (ps.length && !confirm("تنبيه:\n• " + ps.slice(0,6).join("\n• ")
       + (ps.length > 6 ? "\n• …و" + (ps.length - 6) + " غير ذلك" : "")
       + "\n\nهل تريد الحفظ على أي حال؟")) return;
-  if (!token){
+  if (!SRV && !token){
     download();
     say("تم تنزيل الملف. ارفعه إلى المستودع لينشر.", "ok");
     return;
   }
   btn.disabled = true;
+  const json = serialise();
   try{
     let n = 0;
     for (const im of pendingImgs){
       n++; say("رفع الصور " + n + "/" + pendingImgs.length + "…", "");
-      await ghPut(im.path, im.b64, "menu: add image " + im.path);
+      if (SRV) await srv("/image", {path: im.path, b64: im.b64});
+      else await ghPut(im.path, im.b64, "menu: add image " + im.path);
     }
     say("حفظ المنيو…", "");
-    const json = serialise();
-    await ghPut("menu.json", b64enc(json), "menu: update prices and items");
+    if (SRV) await srv("/save", {menu: JSON.parse(json)});
+    else await ghPut("menu.json", b64enc(json), "menu: update prices and items");
     D = JSON.parse(json);
-    if (newAuth){ newAuth = null; }
+    newAuth = null;
     pendingImgs = []; dirty = false;
     say("تم الحفظ. الموقع يتحدّث خلال دقيقة.", "ok");
   }catch(ex){
-    say("فشل الحفظ: " + ex.message, "bad");
+    if (ex.code === "session"){ relogin(); return; }
+    say("فشل الحفظ: " + (ex.code ? srvMsg(ex) : ex.message), "bad");
     btn.disabled = false;
     return;
   }
@@ -765,7 +830,10 @@ addEventListener("beforeunload", e => { if (dirty){ e.preventDefault(); e.return
     return;
   }
   try{ D = await loadData(); }catch(e){}
-  if (sessionStorage.getItem("lr.menu.ok") === "1" && D) afterGate();
+  if (D) SRV = D.api || "";
+  sess = sessionStorage.getItem(SESSKEY);
+  const signedIn = sessionStorage.getItem("lr.menu.ok") === "1" && D && (!SRV || sess);
+  if (signedIn) afterGate();
   else $("#pw").focus();
 })();
 </script>
