@@ -424,7 +424,7 @@ $("#f-gate").addEventListener("submit", async e => {
     }else{
       const a = D.auth;
       if (!a || !a.salt || !a.hash){ err.textContent = "ملف المنيو لا يحتوي كلمة مرور."; return; }
-      const got = await derive($("#pw").value, a.salt, a.iter || 120000);
+      const got = await derive($("#pw").value, a.salt, a.iter || 100000);
       if (got !== a.hash){ err.textContent = "كلمة المرور غير صحيحة."; $("#pw").select(); return; }
     }
     sessionStorage.setItem("lr.menu.ok","1");
@@ -720,7 +720,7 @@ $("#np-go").addEventListener("click", async () => {
   const pw = $("#np").value, btn = $("#np-go");
   if (pw.length < 8){ $("#np-msg").textContent = "استخدم ٨ أحرف على الأقل."; return; }
   const salt = hexOf(crypto.getRandomValues(new Uint8Array(16)));
-  const iter = 310000;
+  const iter = 100000;
   const auth = {salt, iter, hash: await derive(pw, salt, iter)};
   if (SRV){
     // the server stores it, so it applies at once — and ends this session
