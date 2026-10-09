@@ -1,0 +1,12 @@
+# Cloudflare Worker for the La Roche menu admin panel.
+# Deployed from this folder by Cloudflare Workers Builds.
+# The GitHub token is NOT here — it is a dashboard secret named GH_TOKEN.
+
+name = "laroche-menu-api"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# Private store for the admin password hash, so it never sits in the public repo.
+[[kv_namespaces]]
+binding = "KV"
+id = "c969f388bb6a4cd8988f9e3535f90f57"
