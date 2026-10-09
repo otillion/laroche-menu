@@ -153,7 +153,7 @@ async function route(req, env){
 
   if (path === "/login"){
     const auth = await readAuth(env);
-    const got = await derive(String(body.pw || ""), auth.salt, auth.iter || 120000);
+    const got = await derive(String(body.pw || ""), auth.salt, auth.iter || 100000);
     if (!same(got, auth.hash)){
       await new Promise(r => setTimeout(r, 400));       // blunt the guessing rate
       return reply(env, {error: "bad-password"}, 401);
@@ -195,7 +195,7 @@ async function route(req, env){
     if (!env.KV) return reply(env, {error: "kv-missing"}, 501);
     const {salt, iter, hash} = body;
     if (!/^[0-9a-f]{32}$/.test(salt || "") || !/^[0-9a-f]{64}$/.test(hash || "") ||
-        !(iter >= 100000 && iter <= 1000000))
+        !(iter >= 50000 && iter <= 100000))
       return reply(env, {error: "bad-auth"}, 400);
     await writeAuth(env, {salt, iter, hash});
     return reply(env, {ok: true});   // old sessions stop working from here
