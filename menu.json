@@ -1,5 +1,5 @@
 {
- "v": 3,
+ "v": 4,
  "auth": {
   "salt": "9dcfa599d793b3a4144bb6e895e82eb8",
   "iter": 100000,
@@ -34,7 +34,7 @@
     },
     {
      "ar": "بوظة عربي",
-     "tr": "Arap Dondurması",
+     "tr": "Kesme Dondurma",
      "p": 300,
      "img": "2023/11/WhatsApp-Image-2023-11-26-at-5.13.43-PM.jpeg",
      "s": [
